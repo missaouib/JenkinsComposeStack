@@ -1,27 +1,48 @@
 jenkins:
+  systemMessage: "Welcome to Jenkins powered by Configuration as Code!"
+
+  # Set the number of executors (parallel builds)
+  numExecutors: 3
+
+  # Set global environment variables
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: TEST_VARIABLE
+            value: "Hello World"
+
+  # Security settings (disable first-run setup wizard)
   securityRealm:
     local:
       allowsSignup: false
       users:
         - id: "admin"
+          name: "Administrator"
           password: "Admin@123"
+
   authorizationStrategy:
-    loggedInUsersCanDoAnything: {}
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
 
-  systemMessage: "Welcome to Automated Jenkins Setup!"
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+  mailer:
+    smtpHost: "smtp.example.com"
 
+# Configure pipeline jobs via Job DSL plugin
 jobs:
   - script: |
-      pipelineJob('Example Job') {
+      pipelineJob('Print Docker Version') {
         definition {
           cps {
             script("""
               pipeline {
                 agent any
                 stages {
-                  stage('Hello') {
+                  stage('Print Docker Version') {
                     steps {
-                      echo 'Hello, world!'
+                      sh 'docker version'
                     }
                   }
                 }
@@ -32,8 +53,22 @@ jobs:
         }
       }
 
-unclassified:
-  location:
-    url: "http://localhost:8080/"
-  mailer:
-    smtpHost: "smtp.example.com"
+      pipelineJob('Print Docker Info') {
+        definition {
+          cps {
+            script("""
+              pipeline {
+                agent any
+                stages {
+                  stage('Print Docker Info') {
+                    steps {
+                      sh 'docker info'
+                    }
+                  }
+                }
+              }
+            """.stripIndent())
+            sandbox()
+          }
+        }
+      }
