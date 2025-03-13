@@ -1,0 +1,19 @@
+git
+blueocean
+
+# Core functionality
+workflow-aggregator     # Full Pipeline (Jenkinsfile) support
+configuration-as-code   # Jenkins as Code (JCasC)
+
+# UI & Parameterized Jobs (Dropdowns)
+job-dsl                # Programmatically create jobs
+pipeline-utility-steps # Read/write files, manipulate parameters
+#extended-choice-parameter # Multi-select dropdowns
+#active-choices         # Dynamic dropdowns (populate from files)
+
+# Docker & Infrastructure
+docker-workflow        # Run builds inside Docker containers
+ssh-slaves             # SSH connectivity (if needed for Ansible)
+
+# Secrets Management
+credentials-binding    # Store and use secrets safely

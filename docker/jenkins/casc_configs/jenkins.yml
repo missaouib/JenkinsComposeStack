@@ -1,0 +1,39 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "Admin@123"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything: {}
+
+  systemMessage: "Welcome to Automated Jenkins Setup!"
+
+jobs:
+  - script: |
+      pipelineJob('Example Job') {
+        definition {
+          cps {
+            script("""
+              pipeline {
+                agent any
+                stages {
+                  stage('Hello') {
+                    steps {
+                      echo 'Hello, world!'
+                    }
+                  }
+                }
+              }
+            """.stripIndent())
+            sandbox()
+          }
+        }
+      }
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+  mailer:
+    smtpHost: "smtp.example.com"

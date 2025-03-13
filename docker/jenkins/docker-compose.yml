@@ -1,0 +1,52 @@
+services:
+  jenkins:
+    build: .
+    container_name: jenkins
+    restart: unless-stopped
+    privileged: true
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    environment:
+      - DOCKER_HOST=tcp://dind:2375  # Point Jenkins to dind container
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yml
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./casc_configs/jenkins.yml:/var/jenkins_home/casc_configs/jenkins.yml
+    depends_on:
+      dind:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
+      interval: 5s
+      retries: 30
+      start_period: 10s
+      timeout: 5s
+    networks:
+      - jenkins_network
+
+  dind:
+    # The Docker daemon running in docker:dind, and Jenkins will send docker commands here...
+    image: docker:dind
+    container_name: dind
+    privileged: true
+    environment:
+      # TODO: Fix insecure access warnings in logs
+      - DOCKER_TLS_CERTDIR=  # Disables TLS so it listens on 2375
+    volumes:
+      - dind_data:/var/lib/docker
+    healthcheck:
+      test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - jenkins_network
+
+volumes:
+  dind_data:
+  jenkins_home:
+
+networks:
+  jenkins_network:
