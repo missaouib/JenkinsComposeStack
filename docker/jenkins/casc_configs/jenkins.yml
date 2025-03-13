@@ -2,7 +2,7 @@ jenkins:
   systemMessage: "Welcome to Jenkins powered by Configuration as Code!"
 
   # Set the number of executors (parallel builds)
-  numExecutors: 3
+  numExecutors: 0
 
   # Set global environment variables
   globalNodeProperties:
