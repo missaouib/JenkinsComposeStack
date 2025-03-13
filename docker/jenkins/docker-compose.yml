@@ -1,3 +1,4 @@
+# docker-compose up --scale jenkins_agent=2 -d
 services:
   jenkins:
     build: .
@@ -14,6 +15,8 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
       - ./casc_configs/jenkins.yml:/var/jenkins_home/casc_configs/jenkins.yml
+      # TODO: Provide private key through some secure means rather than committing it in plaintext
+      - ./jenkins_ssh_key:/var/jenkins_home/.ssh/id_rsa:ro  # SSH key for agents
     depends_on:
       dind:
         condition: service_healthy
@@ -25,6 +28,16 @@ services:
       timeout: 5s
     networks:
       - jenkins_network
+
+  jenkins_agent:
+    image: jenkins/ssh-agent:jdk21
+    restart: unless-stopped
+    environment:
+      - JENKINS_AGENT_SSH_PUBKEY=${JENKINS_AGENT_SSH_PUBKEY}
+    networks:
+      - jenkins_network
+    depends_on:
+      - jenkins
 
   dind:
     # The Docker daemon running in docker:dind, and Jenkins will send docker commands here...
