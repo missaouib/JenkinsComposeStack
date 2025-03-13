@@ -27,5 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends lsb-release \
     && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli=$DOCKER_CLI_VERSION \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Set timezone
+RUN ln -fs /usr/share/zoneinfo/Australia/Sydney /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
 # Switch back to jenkins user
 USER jenkins
