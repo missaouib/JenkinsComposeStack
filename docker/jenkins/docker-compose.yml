@@ -24,6 +24,12 @@ services:
     depends_on:
       jenkins_agent:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -fs http://localhost:8080/login | grep -q 'Sign in to Jenkins'" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   jenkins_agent:
     build:
