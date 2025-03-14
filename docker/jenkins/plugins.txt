@@ -17,3 +17,6 @@ ssh-slaves             # SSH connectivity (if needed for Ansible)
 
 # Secrets Management
 credentials-binding    # Store and use secrets safely
+
+# Logging & Timestamps
+timestamper            # Adds timestamps to job logs
