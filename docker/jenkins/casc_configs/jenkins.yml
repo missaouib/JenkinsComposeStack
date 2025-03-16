@@ -138,13 +138,20 @@ jobs:
                       stage('Check Jenkins Plugins') {
                           steps {
                               catchError(buildResult: 'UNSTABLE') {
-                                  sh '''
-                                      if ! jenkins-plugin-cli --list | grep -q "configuration-as-code"; then
-                                          echo "❌ Required plugin 'workflow-aggregator' is missing!"
-                                          exit 1
-                                      fi
-                                      echo "✅ Required plugins are installed!"
-                                  '''
+                                  script {
+                                      def pluginList = sh(
+                                          script: '''
+                                              curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
+                                          ''',
+                                          returnStdout: true
+                                      ).trim()
+
+                                      if (pluginList.contains('"shortName":"configuration-as-code"')) {
+                                          echo "✅ Required plugin 'configuration-as-code' is installed."
+                                      } else {
+                                          error("❌ Required plugin 'configuration-as-code' is missing!")
+                                      }
+                                  }
                               }
                           }
                       }
