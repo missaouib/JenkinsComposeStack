@@ -82,39 +82,106 @@ credentials:
 # Configure pipeline jobs via Job DSL plugin
 jobs:
   - script: |
-      pipelineJob('Print Docker Version') {
+      pipelineJob('jenkins-sanity-check-pipeline') {
+        description("""
+          This pipeline performs essential sanity checks to validate the Jenkins environment 
+          before executing builds. It ensures that:
+      
+          - ✅ Ensures the job is not running on the master node.
+          - ✅ Verifies the workspace and checks file creation.
+          - ✅ Confirms that required Jenkins plugins are installed.
+          - ✅ Runs parallel jobs to test concurrent execution.
+          - ✅ Checks if Docker is running and accessible.
+      
+          This helps ensure that the build environment is correctly set up before executing further tasks.
+        """)
         definition {
           cps {
             script("""
               pipeline {
-                agent any
-                stages {
-                  stage('Print Docker Version') {
-                    steps {
-                      sh 'docker version'
-                    }
-                  }
-                }
-              }
-            """.stripIndent())
-            sandbox()
-          }
-        }
-      }
+                  agent any
+                  stages {
+                      stage('Check Agent Node') {
+                          steps {
+                              script {
+                                  def nodeName = env.NODE_NAME
+                                  def agentNodes = ['agent-1', 'agent-2']
+                                  echo "Running on node: \${nodeName}"
+                                  catchError(buildResult: 'UNSTABLE') {
+                                      if (nodeName == "master") {
+                                          error("❌ Job executed on master! Expected an agent.")
+                                      } else if (!agentNodes.contains(nodeName)) {
+                                          error("❌ Job ran on an unexpected node: \${nodeName}")
+                                      } else {
+                                          echo "✅ Job executed correctly on agent: \${nodeName}"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+      
+                      stage('Workspace & File Check') {
+                          steps {
+                              catchError(buildResult: 'UNSTABLE') {
+                                  sh '''
+                                      echo "Test file" > testfile.txt
+                                      if [ ! -f testfile.txt ]; then
+                                          echo "❌ Test file was not created!"
+                                          exit 1
+                                      fi
+                                      echo "✅ Workspace and file creation verified!"
+                                  '''
+                              }
+                          }
+                      }
 
-      pipelineJob('Print Docker Info') {
-        definition {
-          cps {
-            script("""
-              pipeline {
-                agent any
-                stages {
-                  stage('Print Docker Info') {
-                    steps {
-                      sh 'docker info'
-                    }
+                      stage('Check Jenkins Plugins') {
+                          steps {
+                              catchError(buildResult: 'UNSTABLE') {
+                                  sh '''
+                                      if ! jenkins-plugin-cli --list | grep -q "configuration-as-code"; then
+                                          echo "❌ Required plugin 'workflow-aggregator' is missing!"
+                                          exit 1
+                                      fi
+                                      echo "✅ Required plugins are installed!"
+                                  '''
+                              }
+                          }
+                      }
+
+                      stage('Run Parallel Jobs') {
+                          parallel {
+                              stage('Parallel Job 1') {
+                                  steps {
+                                      catchError(buildResult: 'UNSTABLE') {
+                                          sh 'echo "Running parallel job 1..." && sleep 2 && echo "✅ Parallel Job 1 Done!"'
+                                      }
+                                  }
+                              }
+                              stage('Parallel Job 2') {
+                                  steps {
+                                      catchError(buildResult: 'UNSTABLE') {
+                                          sh 'echo "Running parallel job 2..." && sleep 2 && echo "✅ Parallel Job 2 Done!"'
+                                      }
+                                  }
+                              }
+                          }
+                      }
+
+                      stage('Check Docker Connectivity') {
+                          steps {
+                              catchError(buildResult: 'UNSTABLE') {
+                                  sh '''
+                                      if ! docker ps > /dev/null 2>&1; then
+                                          echo "❌ Docker is not accessible!"
+                                          exit 1
+                                      fi
+                                      echo "✅ Docker is running!"
+                                  '''
+                              }
+                          }
+                      }
                   }
-                }
               }
             """.stripIndent())
             sandbox()
