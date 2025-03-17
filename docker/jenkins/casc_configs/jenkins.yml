@@ -139,6 +139,14 @@ jobs:
                           steps {
                               catchError(buildResult: 'UNSTABLE') {
                                   script {
+                                      // Read plugins.txt and clean up the plugin list
+                                      def requiredPlugins = readFile('/home/jenkins/plugins.txt')
+                                          .split("\\r?\\n")
+                                          .collect { it.split("#")[0].trim() } // Remove comments
+                                          .findAll { it } // Remove empty lines
+
+                                      // Fetch installed plugins from Jenkins API
+                                      // TODO: Pass username, password and url as params
                                       def pluginList = sh(
                                           script: '''
                                               curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
@@ -146,10 +154,21 @@ jobs:
                                           returnStdout: true
                                       ).trim()
 
-                                      if (pluginList.contains('"shortName":"configuration-as-code"')) {
-                                          echo "✅ Required plugin 'configuration-as-code' is installed."
+                                      // Check for missing plugins
+                                      def missingPlugins = []
+                                      requiredPlugins.each { plugin ->
+                                          def searchString = 'shortName":"' + plugin + '"'
+                                          def isInstalled = pluginList.contains(searchString)
+                                          if (!isInstalled) {
+                                            missingPlugins.add(plugin)
+                                          }
+                                      }
+                      
+                                      if (missingPlugins.isEmpty()) {
+                                          echo "✅ All required plugins are installed."
                                       } else {
-                                          error("❌ Required plugin 'configuration-as-code' is missing!")
+                                          def missingList = missingPlugins.join(', ')
+                                          error("❌ Missing plugins: " + missingList)
                                       }
                                   }
                               }
