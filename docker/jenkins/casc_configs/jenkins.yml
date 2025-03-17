@@ -86,128 +86,153 @@ jobs:
         description("""
           This pipeline performs essential sanity checks to validate the Jenkins environment 
           before executing builds. It ensures that:
-      
+
           - ✅ Ensures the job is not running on the master node.
           - ✅ Verifies the workspace and checks file creation.
           - ✅ Confirms that required Jenkins plugins are installed.
           - ✅ Runs parallel jobs to test concurrent execution.
           - ✅ Checks if Docker is running and accessible.
-      
+
           This helps ensure that the build environment is correctly set up before executing further tasks.
         """)
         definition {
           cps {
             script("""
               pipeline {
-                  agent any
-                  stages {
-                      stage('Check Agent Node') {
-                          steps {
-                              script {
-                                  def nodeName = env.NODE_NAME
-                                  def agentNodes = ['jenkins-agent-1', 'jenkins-agent-2']
-                                  echo "Running on node: " + nodeName
-                                  catchError(buildResult: 'UNSTABLE') {
-                                      if (nodeName == "master") {
-                                          error("❌ Job executed on master! Expected an agent.")
-                                      } else if (!agentNodes.contains(nodeName)) {
-                                          error("❌ Job ran on an unexpected node: " + nodeName)
-                                      } else {
-                                          echo "✅ Job executed correctly on agent: " + nodeName
-                                      }
-                                  }
-                              }
+                agent any
+                stages {
+                  stage('Check Agent Node') {
+                    steps {
+                      script {
+                        def nodeName = env.NODE_NAME
+                        def agentNodes = ['jenkins-agent-1', 'jenkins-agent-2']
+                        echo "Running on node: " + nodeName
+                        catchError(buildResult: 'UNSTABLE') {
+                          if (nodeName == "master") {
+                            error("❌ Job executed on master! Expected an agent.")
+                          } else if (!agentNodes.contains(nodeName)) {
+                            error("❌ Job ran on an unexpected node: " + nodeName)
+                          } else {
+                            echo "✅ Job executed correctly on agent: " + nodeName
                           }
+                        }
                       }
-      
-                      stage('Workspace & File Check') {
-                          steps {
-                              catchError(buildResult: 'UNSTABLE') {
-                                  sh '''
-                                      echo "Test file" > testfile.txt
-                                      if [ ! -f testfile.txt ]; then
-                                          echo "❌ Test file was not created!"
-                                          exit 1
-                                      fi
-                                      echo "✅ Workspace and file creation verified!"
-                                  '''
-                              }
-                          }
-                      }
-
-                      stage('Check Jenkins Plugins') {
-                          steps {
-                              catchError(buildResult: 'UNSTABLE') {
-                                  script {
-                                      // Read plugins.txt and clean up the plugin list
-                                      def requiredPlugins = readFile('/home/jenkins/plugins.txt')
-                                          .split("\\r?\\n")
-                                          .collect { it.split("#")[0].trim() } // Remove comments
-                                          .findAll { it } // Remove empty lines
-
-                                      // Fetch installed plugins from Jenkins API
-                                      // TODO: Pass username, password and url as params
-                                      def pluginList = sh(
-                                          script: '''
-                                              curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
-                                          ''',
-                                          returnStdout: true
-                                      ).trim()
-
-                                      // Check for missing plugins
-                                      def missingPlugins = []
-                                      requiredPlugins.each { plugin ->
-                                          def searchString = 'shortName":"' + plugin + '"'
-                                          def isInstalled = pluginList.contains(searchString)
-                                          if (!isInstalled) {
-                                            missingPlugins.add(plugin)
-                                          }
-                                      }
-                      
-                                      if (missingPlugins.isEmpty()) {
-                                          echo "✅ All required plugins are installed."
-                                      } else {
-                                          def missingList = missingPlugins.join(', ')
-                                          error("❌ Missing plugins: " + missingList)
-                                      }
-                                  }
-                              }
-                          }
-                      }
-
-                      stage('Run Parallel Jobs') {
-                          parallel {
-                              stage('Parallel Job 1') {
-                                  steps {
-                                      catchError(buildResult: 'UNSTABLE') {
-                                          sh 'echo "Running parallel job 1..." && sleep 2 && echo "✅ Parallel Job 1 Done!"'
-                                      }
-                                  }
-                              }
-                              stage('Parallel Job 2') {
-                                  steps {
-                                      catchError(buildResult: 'UNSTABLE') {
-                                          sh 'echo "Running parallel job 2..." && sleep 2 && echo "✅ Parallel Job 2 Done!"'
-                                      }
-                                  }
-                              }
-                          }
-                      }
-
-                      stage('Check Docker Connectivity') {
-                          steps {
-                              catchError(buildResult: 'UNSTABLE') {
-                                  sh '''
-                                      if ! docker ps > /dev/null 2>&1; then
-                                          echo "❌ Docker is not accessible!"
-                                          exit 1
-                                      fi
-                                      echo "✅ Docker is running!"
-                                  '''
-                              }
-                          }
-                      }
+                    }
                   }
+
+                  stage('Workspace & File Check') {
+                    steps {
+                      catchError(buildResult: 'UNSTABLE') {
+                        sh '''
+                          echo "Test file" > testfile.txt
+                          if [ ! -f testfile.txt ]; then
+                            echo "❌ Test file was not created!"
+                            exit 1
+                          fi
+                          echo "✅ Workspace and file creation verified!"
+                      '''
+                      }
+                    }
+                  }
+
+                  stage('Check Jenkins Plugins') {
+                    steps {
+                      catchError(buildResult: 'UNSTABLE') {
+                        script {
+                          // Read plugins.txt and clean up the plugin list
+                          def requiredPlugins = readFile('/home/jenkins/plugins.txt')
+                              .split("\\r?\\n")
+                              .collect { it.split("#")[0].trim() } // Remove comments
+                              .findAll { it } // Remove empty lines
+
+                          // Parse required plugins and their versions
+                          def pluginVersionMap = [:]
+                          requiredPlugins.each { plugin ->
+                            def parts = plugin.split(":")
+                            def pluginName = parts[0].trim()
+                            def pluginVersion = parts.size() == 2 ? parts[1].trim() : null
+                            pluginVersionMap[pluginName] = pluginVersion
+                          }
+
+                          // Fetch installed plugins from Jenkins API
+                          def pluginList = sh(
+                            script: '''
+                              curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
+                            ''',
+                            returnStdout: true
+                          ).trim()
+
+                          // Parse JSON response
+                          def json = new groovy.json.JsonSlurper().parseText(pluginList)
+
+                          // Convert plugin list into a map of shortName -> version
+                          def installedPlugins = json.plugins.collectEntries { [(it.shortName): it.version] }
+
+                          // Check for missing or outdated plugins
+                          def missingPlugins = []
+                          def outdatedPlugins = []
+                          pluginVersionMap.each { pluginName, requiredVersion ->
+                            def installedVersion = installedPlugins[pluginName]
+                            if (!installedVersion) {
+                              missingPlugins.add(pluginName + (requiredVersion ? ":" + requiredVersion : ""))
+                            } else {
+                              if (requiredVersion && installedVersion != requiredVersion) {
+                                outdatedPlugins.add(pluginName + ": " + installedVersion + " (required: " + requiredVersion + ")")
+                              }
+                            }
+                          }
+
+                          if (missingPlugins.isEmpty() && outdatedPlugins.isEmpty()) {
+                            echo "✅ All required plugins are installed with the correct versions."
+                          } else {
+                            if (!missingPlugins.isEmpty()) {
+                              def missingList = missingPlugins.join(', ')
+                              echo "❌ Missing plugins: " + missingList
+                            }
+                            if (!outdatedPlugins.isEmpty()) {
+                              def outdatedList = outdatedPlugins.join(', ')
+                              echo "❌ Outdated plugins: " + outdatedList
+                            }
+                            error("Plugin verification failed.")
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  stage('Run Parallel Jobs') {
+                    parallel {
+                      stage('Parallel Job 1') {
+                        steps {
+                          catchError(buildResult: 'UNSTABLE') {
+                            sh 'echo "Running parallel job 1..." && sleep 2 && echo "✅ Parallel Job 1 Done!"'
+                          }
+                        }
+                      }
+                      stage('Parallel Job 2') {
+                        steps {
+                          catchError(buildResult: 'UNSTABLE') {
+                            sh 'echo "Running parallel job 2..." && sleep 2 && echo "✅ Parallel Job 2 Done!"'
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  stage('Check Docker Connectivity') {
+                    steps {
+                      catchError(buildResult: 'UNSTABLE') {
+                        sh '''
+                          if ! docker ps > /dev/null 2>&1; then
+                            echo "❌ Docker is not accessible!"
+                            exit 1
+                          fi
+                          echo "✅ Docker is running!"
+                        '''
+                      }
+                    }
+                  }
+                }
               }
             """.stripIndent())
             sandbox()
