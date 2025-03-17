@@ -105,15 +105,15 @@ jobs:
                           steps {
                               script {
                                   def nodeName = env.NODE_NAME
-                                  def agentNodes = ['agent-1', 'agent-2']
-                                  echo "Running on node: \${nodeName}"
+                                  def agentNodes = ['jenkins-agent-1', 'jenkins-agent-2']
+                                  echo "Running on node: " + nodeName
                                   catchError(buildResult: 'UNSTABLE') {
                                       if (nodeName == "master") {
                                           error("❌ Job executed on master! Expected an agent.")
                                       } else if (!agentNodes.contains(nodeName)) {
-                                          error("❌ Job ran on an unexpected node: \${nodeName}")
+                                          error("❌ Job ran on an unexpected node: " + nodeName)
                                       } else {
-                                          echo "✅ Job executed correctly on agent: \${nodeName}"
+                                          echo "✅ Job executed correctly on agent: " + nodeName
                                       }
                                   }
                               }
