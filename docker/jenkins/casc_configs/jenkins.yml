@@ -21,6 +21,9 @@ jenkins:
         - id: "admin"
           name: "Administrator"
           password: "${ADMIN_PASSWORD}"
+        - id: "ci_user"
+          name: "CI_User"
+          password: "${CI_USER_PASSWORD}"
 
   authorizationStrategy:
     loggedInUsersCanDoAnything:
