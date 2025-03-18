@@ -29,12 +29,23 @@ sudo apt-get update -qq
 # Step 5: Install Docker (specific version if set, latest if not)
 if [ -n "$DOCKER_VERSION" ]; then
   echo "Installing Docker version ${DOCKER_VERSION}..."
-  sudo apt-get install -y -qq docker-ce="${DOCKER_VERSION}" docker-ce-cli="${DOCKER_VERSION}" containerd.io
+  sudo apt-get install -y -qq \
+         docker-ce="${DOCKER_VERSION}" \
+         docker-ce-cli="${DOCKER_VERSION}" \
+         containerd.io \
+         docker-buildx-plugin \
+         docker-compose-plugin
 else
   echo "Installing the latest Docker version..."
-  sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io
+  sudo apt-get install -y -qq \
+           docker-ce \
+           docker-ce-cli \
+           containerd.io \
+           docker-buildx-plugin \
+           docker-compose-plugin
 fi
 
 # Step 6: Verify Docker installation
 echo "Verifying Docker installation..."
 docker --version
+docker compose version
