@@ -1,16 +1,16 @@
 #!/bin/sh
 
+CI_USER="ci_user"
 JENKINS_URL="http://localhost:8080"
-JENKINS_USER="admin"
-# TODO: Secure the password
-JENKINS_TOKEN="Admin@123"
+CI_USER_API_TOKEN_FILE="secrets/ci_user_api_token.txt"
+CI_USER_API_TOKEN="$(cat $CI_USER_API_TOKEN_FILE)"
 
 # Get agent status with error handling
-RESPONSE=$(curl -s -u "$JENKINS_USER:$JENKINS_TOKEN" "$JENKINS_URL/computer/api/json")
+RESPONSE=$(curl -s -u "$CI_USER:$CI_USER_API_TOKEN" "$JENKINS_URL/computer/api/json")
 
 # Check if authentication failed
 if echo "$RESPONSE" | grep -q "Unauthorized"; then
-  echo "❌ Authentication failed! Please check JENKINS_USER and JENKINS_TOKEN."
+  echo "❌ Authentication failed! Please check CI_USER and CI_USER_API_TOKEN."
   exit 2
 fi
 
