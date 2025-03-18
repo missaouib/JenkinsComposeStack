@@ -46,10 +46,10 @@ jobs:
         working-directory: ./docker/jenkins
 
       - name: Test Jenkins server is up and running
-        run: sh ./docker/jenkins/test/test_jenkins.sh
+        run: sh ./docker/jenkins/tests/test_jenkins.sh
 
       - name: Test Jenkins agents are online and connected
-        run: sh ./docker/jenkins/test/test_agents.sh
+        run: sh ./docker/jenkins/tests/test_agents.sh
 
       - name: Collect Docker container logs
         if: ${{ always() }}
