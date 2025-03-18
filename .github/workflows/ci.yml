@@ -22,7 +22,7 @@ jobs:
         working-directory: ./.github/workflows/scripts
 
       - name: Check if docker compose is available before proceeding
-        run: which docker-compose || { echo "docker compose is not installed or not in PATH"; exit 1; }
+        run: docker compose version || { echo "docker compose is not installed or not in PATH"; exit 1; }
 
       - name: Start and setup the container
         id: docker-start
