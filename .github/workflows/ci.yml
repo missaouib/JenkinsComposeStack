@@ -52,6 +52,7 @@ jobs:
         run: sh ./docker/jenkins/tests/test_agents.sh
 
       - name: Debug Running Containers
+        if: ${{ always() }}
         run: docker ps -a
 
       - name: Collect Docker container logs
