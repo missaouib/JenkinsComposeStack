@@ -6,8 +6,12 @@ on:
       - master
 
 env:
-  DOCKER_VERSION: 5:28.0.1-1~ubuntu.24.04~noble
+  JENKINS_AGENT_SCALE: 2
+  CI_USER_PASSWORD: cI_User@123
+  JENKINS_WORKDIR: ./docker/jenkins
   DOCKER_COMPOSE_FILE: docker-compose.yml
+  DOCKER_VERSION: 5:28.0.1-1~ubuntu.24.04~noble
+  CI_USER_PASSWORD_FILE: secrets/ci_user_password.txt
 
 jobs:
   build:
@@ -26,30 +30,30 @@ jobs:
 
       - name: Start and setup the container
         id: docker-start
-        run: docker compose up --scale jenkins_agent=2 -d
-        working-directory: ./docker/jenkins
+        run: docker compose up --scale jenkins_agent=${{ env.JENKINS_AGENT_SCALE }} -d
+        working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Test Jenkins server is up and running
         run: sh tests/test_jenkins.sh
-        working-directory: ./docker/jenkins
+        working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Create secrets file
         run: |
           mkdir -p secrets
-          echo "cI_User@123" > secrets/ci_user_password.txt
-        working-directory: ./docker/jenkins
+          echo "${{ env.CI_USER_PASSWORD }}" > ${{ env.CI_USER_PASSWORD_FILE }}
+        working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Generate the API token for the CI_User needed to be used with test scripts
         run: sh scripts/generate_token.sh
-        working-directory: ./docker/jenkins
+        working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Test Jenkins agents are online and connected
         run: sh tests/test_agents.sh
-        working-directory: ./docker/jenkins
+        working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Run the sanity check pipeline
         run: sh tests/test_jobs.sh
-        working-directory: ./docker/jenkins
+        working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Debug Running Containers
         if: ${{ always() }}
@@ -73,4 +77,4 @@ jobs:
           else
             echo "No containers to clean up."
           fi
-        working-directory: ./docker/jenkins
+        working-directory: ${{ env.JENKINS_WORKDIR }}
