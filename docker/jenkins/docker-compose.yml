@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile.jenkins
     container_name: jenkins
     restart: unless-stopped
-    user: root
+    user: jenkins
     ports:
       - "8080:8080"
       - "50000:50000"
