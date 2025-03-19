@@ -11,6 +11,9 @@ RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 COPY casc_configs /var/jenkins_home/casc_configs
 ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yml
 
+# TODO: Provide private key through some secure means rather than committing it in plaintext
+COPY jenkins_ssh_key /var/jenkins_home/.ssh/id_rsa
+
 # Set timezone
 USER root
 RUN ln -fs /usr/share/zoneinfo/Australia/Sydney /etc/localtime && \
