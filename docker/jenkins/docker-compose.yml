@@ -11,6 +11,7 @@ services:
       - "8080:8080"
       - "50000:50000"
     environment:
+      - DOCKER_HOST=tcp://dind:2375
       - ADMIN_PASSWORD=Admin@123
       - CI_USER_PASSWORD=cI_User@123
       - SSH_PRIVATE_KEY_PATH=/var/jenkins_home/.ssh/id_rsa
