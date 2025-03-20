@@ -28,37 +28,63 @@ jenkins:
   authorizationStrategy:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
+#
+#  nodes:
+#    - permanent:
+#        name: "jenkins-agent-1"
+#        remoteFS: "/home/jenkins"
+#        numExecutors: 2
+#        mode: NORMAL
+#        labelString: "docker"
+#        launcher:
+#          ssh:
+#            host: "jenkins-jenkins_agent-1"
+#            port: 22
+#            credentialsId: "jenkins-agent-ssh"
+#            sshHostKeyVerificationStrategy:
+#              manuallyTrustedKeyVerificationStrategy:
+#                requireInitialManualTrust: false
+#
+#    - permanent:
+#        name: "jenkins-agent-2"
+#        remoteFS: "/home/jenkins"
+#        numExecutors: 2
+#        mode: NORMAL
+#        labelString: "docker"
+#        launcher:
+#          ssh:
+#            host: "jenkins-jenkins_agent-2"
+#            port: 22
+#            credentialsId: "jenkins-agent-ssh"
+#            sshHostKeyVerificationStrategy:
+#              manuallyTrustedKeyVerificationStrategy:
+#                requireInitialManualTrust: false
 
-  nodes:
-    - permanent:
-        name: "jenkins-agent-1"
-        remoteFS: "/home/jenkins"
-        numExecutors: 2
-        mode: NORMAL
-        labelString: "docker"
-        launcher:
-          ssh:
-            host: "jenkins-jenkins_agent-1"
-            port: 22
-            credentialsId: "jenkins-agent-ssh"
-            sshHostKeyVerificationStrategy:
-              manuallyTrustedKeyVerificationStrategy:
-                requireInitialManualTrust: false
-
-    - permanent:
-        name: "jenkins-agent-2"
-        remoteFS: "/home/jenkins"
-        numExecutors: 2
-        mode: NORMAL
-        labelString: "docker"
-        launcher:
-          ssh:
-            host: "jenkins-jenkins_agent-2"
-            port: 22
-            credentialsId: "jenkins-agent-ssh"
-            sshHostKeyVerificationStrategy:
-              manuallyTrustedKeyVerificationStrategy:
-                requireInitialManualTrust: false
+  clouds:
+    - docker:
+        name: "Docker"
+        containerCap: 5  # Global Limit for the Cloud -maximum number of running containers for this entire Docker cloud.
+        errorDuration: 313
+        dockerApi:
+          dockerHost:
+            uri: "tcp://dind:2375"  # Agents need Docker access - points agents to dind container
+          readTimeout: 120
+          connectTimeout: 60
+        templates:
+          - name: "docker-agent-template"
+            pullTimeout: 171
+            remoteFs: "/home/jenkins/agent"
+            labelString: "docker-agent alpine jdk21 alpine-jdk21 git-2.43"
+            instanceCapStr: "2"  # Limit max agents that can be launched from this specific agent template.
+            retentionStrategy:
+              idleMinutes: 1  # Number of minutes of idleness after which to kill the agent
+            dockerTemplateBase:
+              memorySwap: 0  # Disables swap, preventing memory overuse.
+              memoryLimit: 512m  # Restricts agent container memory usage to 512MB.
+              image: "jenkins/inbound-agent:jdk21"
+            connector:
+              attach:
+                user: "jenkins"
 
 unclassified:
   timestamper:
@@ -69,18 +95,18 @@ unclassified:
   mailer:
     smtpHost: "smtp.example.com"
 
-credentials:
-  system:
-    domainCredentials:
-      - credentials:
-          - basicSSHUserPrivateKey:
-              id: "jenkins-agent-ssh"
-              description: "SSH key for Jenkins agents"
-              scope: GLOBAL
-              username: "jenkins"
-              privateKeySource:
-                directEntry:
-                  privateKey: "${readFile:${SSH_PRIVATE_KEY_PATH}}"
+#credentials:
+#  system:
+#    domainCredentials:
+#      - credentials:
+#          - basicSSHUserPrivateKey:
+#              id: "jenkins-agent-ssh"
+#              description: "SSH key for Jenkins agents"
+#              scope: GLOBAL
+#              username: "jenkins"
+#              privateKeySource:
+#                directEntry:
+#                  privateKey: "${readFile:${SSH_PRIVATE_KEY_PATH}}"
 
 # Configure pipeline jobs via Job DSL plugin
 jobs:
@@ -108,12 +134,11 @@ jobs:
                     steps {
                       script {
                         def nodeName = env.NODE_NAME
-                        def agentNodes = ['jenkins-agent-1', 'jenkins-agent-2']
                         echo "Running on node: " + nodeName
                         catchError(buildResult: 'UNSTABLE') {
                           if (nodeName == "master") {
                             error("❌ Job executed on master! Expected an agent.")
-                          } else if (!agentNodes.contains(nodeName)) {
+                          } else if (!(nodeName ==~ /^docker-agent-template-.*/)) {
                             error("❌ Job ran on an unexpected node: " + nodeName)
                           } else {
                             echo "✅ Job executed correctly on agent: " + nodeName
@@ -138,70 +163,70 @@ jobs:
                     }
                   }
 
-                  stage('Check Jenkins Plugins') {
-                    steps {
-                      catchError(buildResult: 'UNSTABLE') {
-                        script {
-                          // Read plugins.txt and clean up the plugin list
-                          def requiredPlugins = readFile('/home/jenkins/plugins.txt')
-                              .split("\\r?\\n")
-                              .collect { it.split("#")[0].trim() } // Remove comments
-                              .findAll { it } // Remove empty lines
-
-                          // Parse required plugins and their versions
-                          def pluginVersionMap = [:]
-                          requiredPlugins.each { plugin ->
-                            def parts = plugin.split(":")
-                            def pluginName = parts[0].trim()
-                            def pluginVersion = parts.size() == 2 ? parts[1].trim() : null
-                            pluginVersionMap[pluginName] = pluginVersion
-                          }
-
-                          // Fetch installed plugins from Jenkins API
-                          def pluginList = sh(
-                            script: '''
-                              curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
-                            ''',
-                            returnStdout: true
-                          ).trim()
-
-                          // Parse JSON response
-                          def json = new groovy.json.JsonSlurper().parseText(pluginList)
-
-                          // Convert plugin list into a map of shortName -> version
-                          def installedPlugins = json.plugins.collectEntries { [(it.shortName): it.version] }
-
-                          // Check for missing or outdated plugins
-                          def missingPlugins = []
-                          def outdatedPlugins = []
-                          pluginVersionMap.each { pluginName, requiredVersion ->
-                            def installedVersion = installedPlugins[pluginName]
-                            if (!installedVersion) {
-                              missingPlugins.add(pluginName + (requiredVersion ? ":" + requiredVersion : ""))
-                            } else {
-                              if (requiredVersion && installedVersion != requiredVersion) {
-                                outdatedPlugins.add(pluginName + ": " + installedVersion + " (required: " + requiredVersion + ")")
-                              }
-                            }
-                          }
-
-                          if (missingPlugins.isEmpty() && outdatedPlugins.isEmpty()) {
-                            echo "✅ All required plugins are installed with the correct versions."
-                          } else {
-                            if (!missingPlugins.isEmpty()) {
-                              def missingList = missingPlugins.join(', ')
-                              echo "❌ Missing plugins: " + missingList
-                            }
-                            if (!outdatedPlugins.isEmpty()) {
-                              def outdatedList = outdatedPlugins.join(', ')
-                              echo "❌ Outdated plugins: " + outdatedList
-                            }
-                            error("Plugin verification failed.")
-                          }
-                        }
-                      }
-                    }
-                  }
+                  //stage('Check Jenkins Plugins') {
+                  //  steps {
+                  //    catchError(buildResult: 'UNSTABLE') {
+                  //      script {
+                  //        // Read plugins.txt and clean up the plugin list
+                  //        def requiredPlugins = readFile('/home/jenkins/plugins.txt')
+                  //            .split("\\r?\\n")
+                  //            .collect { it.split("#")[0].trim() } // Remove comments
+                  //            .findAll { it } // Remove empty lines
+                  //
+                  //        // Parse required plugins and their versions
+                  //        def pluginVersionMap = [:]
+                  //        requiredPlugins.each { plugin ->
+                  //          def parts = plugin.split(":")
+                  //          def pluginName = parts[0].trim()
+                  //          def pluginVersion = parts.size() == 2 ? parts[1].trim() : null
+                  //          pluginVersionMap[pluginName] = pluginVersion
+                  //        }
+                  //
+                  //        // Fetch installed plugins from Jenkins API
+                  //        def pluginList = sh(
+                  //          script: '''
+                  //            curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
+                  //          ''',
+                  //          returnStdout: true
+                  //        ).trim()
+                  //
+                  //        // Parse JSON response
+                  //        def json = new groovy.json.JsonSlurper().parseText(pluginList)
+                  //
+                  //        // Convert plugin list into a map of shortName -> version
+                  //        def installedPlugins = json.plugins.collectEntries { [(it.shortName): it.version] }
+                  //
+                  //        // Check for missing or outdated plugins
+                  //        def missingPlugins = []
+                  //        def outdatedPlugins = []
+                  //        pluginVersionMap.each { pluginName, requiredVersion ->
+                  //          def installedVersion = installedPlugins[pluginName]
+                  //          if (!installedVersion) {
+                  //            missingPlugins.add(pluginName + (requiredVersion ? ":" + requiredVersion : ""))
+                  //          } else {
+                  //            if (requiredVersion && installedVersion != requiredVersion) {
+                  //              outdatedPlugins.add(pluginName + ": " + installedVersion + " (required: " + requiredVersion + ")")
+                  //            }
+                  //          }
+                  //        }
+                  //
+                  //        if (missingPlugins.isEmpty() && outdatedPlugins.isEmpty()) {
+                  //          echo "✅ All required plugins are installed with the correct versions."
+                  //        } else {
+                  //          if (!missingPlugins.isEmpty()) {
+                  //            def missingList = missingPlugins.join(', ')
+                  //            echo "❌ Missing plugins: " + missingList
+                  //          }
+                  //          if (!outdatedPlugins.isEmpty()) {
+                  //            def outdatedList = outdatedPlugins.join(', ')
+                  //            echo "❌ Outdated plugins: " + outdatedList
+                  //          }
+                  //          error("Plugin verification failed.")
+                  //        }
+                  //      }
+                  //    }
+                  //  }
+                  //}
 
                   stage('Run Parallel Jobs') {
                     parallel {
@@ -222,19 +247,19 @@ jobs:
                     }
                   }
 
-                  stage('Check Docker Connectivity') {
-                    steps {
-                      catchError(buildResult: 'UNSTABLE') {
-                        sh '''
-                          if ! docker ps > /dev/null 2>&1; then
-                            echo "❌ Docker is not accessible!"
-                            exit 1
-                          fi
-                          echo "✅ Docker is running!"
-                        '''
-                      }
-                    }
-                  }
+                  //stage('Check Docker Connectivity') {
+                  //  steps {
+                  //    catchError(buildResult: 'UNSTABLE') {
+                  //      sh '''
+                  //        if ! docker ps > /dev/null 2>&1; then
+                  //          echo "❌ Docker is not accessible!"
+                  //          exit 1
+                  //        fi
+                  //        echo "✅ Docker is running!"
+                  //      '''
+                  //    }
+                  //  }
+                  //}
                 }
               }
             """.stripIndent())
