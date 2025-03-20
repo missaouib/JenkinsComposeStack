@@ -28,37 +28,6 @@ jenkins:
   authorizationStrategy:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
-#
-#  nodes:
-#    - permanent:
-#        name: "jenkins-agent-1"
-#        remoteFS: "/home/jenkins"
-#        numExecutors: 2
-#        mode: NORMAL
-#        labelString: "docker"
-#        launcher:
-#          ssh:
-#            host: "jenkins-jenkins_agent-1"
-#            port: 22
-#            credentialsId: "jenkins-agent-ssh"
-#            sshHostKeyVerificationStrategy:
-#              manuallyTrustedKeyVerificationStrategy:
-#                requireInitialManualTrust: false
-#
-#    - permanent:
-#        name: "jenkins-agent-2"
-#        remoteFS: "/home/jenkins"
-#        numExecutors: 2
-#        mode: NORMAL
-#        labelString: "docker"
-#        launcher:
-#          ssh:
-#            host: "jenkins-jenkins_agent-2"
-#            port: 22
-#            credentialsId: "jenkins-agent-ssh"
-#            sshHostKeyVerificationStrategy:
-#              manuallyTrustedKeyVerificationStrategy:
-#                requireInitialManualTrust: false
 
   clouds:
     - docker:
@@ -94,19 +63,6 @@ unclassified:
     url: "http://localhost:8080/"
   mailer:
     smtpHost: "smtp.example.com"
-
-#credentials:
-#  system:
-#    domainCredentials:
-#      - credentials:
-#          - basicSSHUserPrivateKey:
-#              id: "jenkins-agent-ssh"
-#              description: "SSH key for Jenkins agents"
-#              scope: GLOBAL
-#              username: "jenkins"
-#              privateKeySource:
-#                directEntry:
-#                  privateKey: "${readFile:${SSH_PRIVATE_KEY_PATH}}"
 
 # Configure pipeline jobs via Job DSL plugin
 jobs:
