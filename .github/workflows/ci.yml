@@ -29,33 +29,40 @@ jobs:
         run: docker compose version || { echo "docker compose is not installed or not in PATH"; exit 1; }
 
       - name: Start and setup the container
-        id: docker-start
+        id: docker_start
         run: docker compose up --scale jenkins_agent=${{ env.JENKINS_AGENT_SCALE }} -d
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Test Jenkins server is up and running
+        id: test_jenkins
         run: sh tests/test_jenkins.sh
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Test the ownership of dirs
+        if: success(steps.docker_start)
         run: sh tests/test_ownership.sh
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Create secrets file
+        if: success(steps.test_jenkins)
         run: |
           mkdir -p secrets
           echo "${{ env.CI_USER_PASSWORD }}" > ${{ env.CI_USER_PASSWORD_FILE }}
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Generate the API token for the CI_User needed to be used with test scripts
+        if: success(steps.test_jenkins)
+        id: generate_token
         run: sh scripts/generate_token.sh
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Test Jenkins agents are online and connected
+        if: success(steps.generate_token)
         run: sh tests/test_agents.sh
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Run the sanity check pipeline
+        if: success(steps.generate_token)
         run: sh tests/test_jobs.sh
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
