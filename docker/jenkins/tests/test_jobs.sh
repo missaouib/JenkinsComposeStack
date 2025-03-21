@@ -1,6 +1,6 @@
 #!/bin/sh
 
-MAX_RETRIES=25
+MAX_RETRIES=60
 RETRY_INTERVAL=2  # seconds
 CI_USER="ci_user"
 JENKINS_URL="http://localhost:8080"
@@ -18,6 +18,9 @@ if [ -z "$CRUMB" ] || [ -z "$CRUMB_FIELD" ]; then
   echo "❌ Failed to fetch CSRF token! Check Jenkins credentials."
   exit 1
 fi
+
+LAST_BUILD_JSON=$(curl -s -u "$CI_USER:$CI_USER_API_TOKEN" "$JENKINS_URL/job/$JOB_NAME/lastBuild/api/json")
+LAST_BUILD_NUMBER=$(echo "$LAST_BUILD_JSON" | sed -n 's/.*"number":\([0-9]\+\).*"previousBuild".*/\1/p')
 
 # Trigger job with
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
@@ -40,10 +43,10 @@ echo "✅ Job '$JOB_NAME' triggered successfully. Waiting for it to start..."
 attempt=0
 while [ "$attempt" -lt "$MAX_RETRIES" ]; do
     BUILD_JSON=$(curl -s -u "$CI_USER:$CI_USER_API_TOKEN" "$JENKINS_URL/job/$JOB_NAME/lastBuild/api/json")
-    BUILD_NUMBER=$(echo "$BUILD_JSON" | grep -o '"number":[0-9]*' | grep -o '[0-9]*')
+    BUILD_NUMBER=$(echo "$BUILD_JSON" | sed -n 's/.*"number":\([0-9]\+\).*"previousBuild".*/\1/p')
 
-    if [ -n "$BUILD_NUMBER" ]; then
-        echo "🔎 Build started with number: $BUILD_NUMBER"
+    if [ -n "$BUILD_NUMBER" ] && [ "$BUILD_NUMBER" -gt "$LAST_BUILD_NUMBER" ]; then
+        echo "🔎 New build detected! Build number: $BUILD_NUMBER"
         break
     fi
 
