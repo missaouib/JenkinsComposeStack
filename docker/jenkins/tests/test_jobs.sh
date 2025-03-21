@@ -1,6 +1,6 @@
 #!/bin/sh
 
-MAX_RETRIES=60
+MAX_RETRIES=120
 RETRY_INTERVAL=2  # seconds
 CI_USER="ci_user"
 JENKINS_URL="http://localhost:8080"
@@ -21,6 +21,7 @@ fi
 
 LAST_BUILD_JSON=$(curl -s -u "$CI_USER:$CI_USER_API_TOKEN" "$JENKINS_URL/job/$JOB_NAME/lastBuild/api/json")
 LAST_BUILD_NUMBER=$(echo "$LAST_BUILD_JSON" | sed -n 's/.*"number":\([0-9]\+\).*"previousBuild".*/\1/p')
+LAST_BUILD_NUMBER=${LAST_BUILD_NUMBER:-0}  # Default to 0 if empty
 
 # Trigger job with
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
