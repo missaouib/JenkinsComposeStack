@@ -40,35 +40,27 @@ jenkins:
           readTimeout: 120
           connectTimeout: 60
         templates:
-          - name: "docker-agent-template"
+          - &base-template  # Define a reusable template
+            name: "docker-agent-template"
             pullTimeout: 171
             remoteFs: "/home/jenkins/agent"
             labelString: "docker-agent alpine jdk21 alpine-jdk21 git-2.43"
             instanceCapStr: "2"  # Limit max agents that can be launched from this specific agent template.
             retentionStrategy:
               idleMinutes: 1  # Number of minutes of idleness after which to kill the agent
-            dockerTemplateBase:
+            dockerTemplateBase: &common-docker-template-base
               memorySwap: 0  # Disables swap, preventing memory overuse.
               memoryLimit: 512m  # Restricts agent container memory usage to 512MB.
               image: "jenkins/inbound-agent:jdk21"
             connector:
               attach:
                 user: "jenkins"
-          - name: "docker-agent-on-hostnet-template"
-            pullTimeout: 171
-            remoteFs: "/home/jenkins/agent"
+          - <<: *base-template  # Reuse the base template override the fields with different values
+            name: "docker-agent-on-hostnet-template"
             labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
-            instanceCapStr: "2"  # Limit max agents that can be launched from this specific agent template.
-            retentionStrategy:
-              idleMinutes: 1  # Number of minutes of idleness after which to kill the agent
             dockerTemplateBase:
-              memorySwap: 0  # Disables swap, preventing memory overuse.
-              memoryLimit: 512m  # Restricts agent container memory usage to 512MB.
-              image: "jenkins/inbound-agent:jdk21"
+              <<: *common-docker-template-base
               network: host  # To allow access to the host network
-            connector:
-              attach:
-                user: "jenkins"
 
 unclassified:
   timestamper:
