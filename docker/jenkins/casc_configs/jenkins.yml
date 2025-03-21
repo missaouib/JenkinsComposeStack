@@ -54,6 +54,21 @@ jenkins:
             connector:
               attach:
                 user: "jenkins"
+          - name: "docker-agent-on-hostnet-template"
+            pullTimeout: 171
+            remoteFs: "/home/jenkins/agent"
+            labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
+            instanceCapStr: "2"  # Limit max agents that can be launched from this specific agent template.
+            retentionStrategy:
+              idleMinutes: 1  # Number of minutes of idleness after which to kill the agent
+            dockerTemplateBase:
+              memorySwap: 0  # Disables swap, preventing memory overuse.
+              memoryLimit: 512m  # Restricts agent container memory usage to 512MB.
+              image: "jenkins/inbound-agent:jdk21"
+              network: host  # To allow access to the host network
+            connector:
+              attach:
+                user: "jenkins"
 
 unclassified:
   timestamper:
@@ -115,6 +130,22 @@ jobs:
                           fi
                           echo "✅ Workspace and file creation verified!"
                       '''
+                      }
+                    }
+                  }
+
+                  stage('Agent-to-Controller Network Test') {
+                    agent { label 'docker-agent-on-hostnet' }
+                    steps {
+                      catchError(buildResult: 'UNSTABLE') {
+                        sh '''
+                          if curl -s -o /dev/null --connect-timeout 5 --fail http://jenkins:8080/login; then
+                            echo "✅ Agent can reach Jenkins controller!"
+                          else
+                            echo "❌ Agent cannot reach Jenkins controller!"
+                            exit 1
+                          fi
+                        '''
                       }
                     }
                   }
