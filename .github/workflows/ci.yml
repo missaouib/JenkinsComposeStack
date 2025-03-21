@@ -6,7 +6,6 @@ on:
       - master
 
 env:
-  JENKINS_AGENT_SCALE: 2
   CI_USER_PASSWORD: cI_User@123
   JENKINS_WORKDIR: ./docker/jenkins
   DOCKER_COMPOSE_FILE: docker-compose.yml
@@ -30,7 +29,7 @@ jobs:
 
       - name: Start and setup the container
         id: docker_start
-        run: docker compose up --scale jenkins_agent=${{ env.JENKINS_AGENT_SCALE }} -d
+        run: docker compose up -d
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Test Jenkins server is up and running
