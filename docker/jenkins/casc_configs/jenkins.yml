@@ -71,7 +71,7 @@ jenkins:
             dockerTemplateBase:
               <<: *common-docker-template-base  # Reuse the base template override the fields with different values
               # TODO: build the image in dind manually for now but automate the image building
-              image: "jenkins-jenkins_agent" # docker build -t jenkins-jenkins_agent:latest -f /tmp/Dockerfile.agent .
+              image: "jenkins-jenkins_agent"
               network: host  # To allow access to the host network
 
 unclassified:
