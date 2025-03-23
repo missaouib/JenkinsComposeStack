@@ -41,7 +41,7 @@ jenkins:
           connectTimeout: 60
         templates:
           - &base-template  # Define a reusable template
-            name: "docker-agent-template"
+            name: "agent-template"
             pullTimeout: 171
             remoteFs: "/home/jenkins/agent"
             labelString: "docker-agent alpine jdk21 alpine-jdk21 git-2.43"
@@ -56,8 +56,8 @@ jenkins:
               attach:
                 user: "jenkins"
           - <<: *base-template  # Reuse the base template override the fields with different values
-            name: "docker-agent-on-hostnet-template"
-            labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
+            name: "agent-on-hostnet-template"
+            labelString: "agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
             dockerTemplateBase:
               <<: *common-docker-template-base  # Reuse the base template override the fields with different values
               network: host  # To allow access to the host network
@@ -105,7 +105,7 @@ jobs:
                         catchError(buildResult: 'UNSTABLE') {
                           if (nodeName == "master") {
                             error("❌ Job executed on master! Expected an agent.")
-                          } else if (!(nodeName ==~ /^docker-agent(-on-hostnet)?-template-.*/)) {
+                          } else if (!(nodeName ==~ /^agent(-on-hostnet)?-template-.*/)) {
                             error("❌ Job ran on an unexpected node: " + nodeName)
                           } else {
                             echo "✅ Job executed correctly on agent: " + nodeName
@@ -131,7 +131,7 @@ jobs:
                   }
 
                   stage('Agent-to-Controller Network Test') {
-                    agent { label 'docker-agent-on-hostnet' }
+                    agent { label 'agent-on-hostnet' }
                     steps {
                       catchError(buildResult: 'UNSTABLE') {
                         sh '''
@@ -147,7 +147,7 @@ jobs:
                   }
 
                   stage('Check Jenkins Plugins') {
-                    agent { label 'docker-agent-on-hostnet' }
+                    agent { label 'agent-on-hostnet' }
                     steps {
                       catchError(buildResult: 'UNSTABLE') {
                         script {
