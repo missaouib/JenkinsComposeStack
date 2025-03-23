@@ -16,6 +16,7 @@ services:
       - CI_USER_PASSWORD=${JENKINS_CI_USER_PASSWORD}
     volumes:
       - jenkins_home:/var/jenkins_home
+      - jenkins_plugins:/usr/share/jenkins/ref
       - ./casc_configs/jenkins.yml:/var/jenkins_home/casc_configs/jenkins.yml
     networks:
       - jenkins_network
@@ -47,6 +48,11 @@ services:
       - DOCKER_TLS_CERTDIR=${DOCKER_TLS_CERTDIR}
     volumes:
       - dind_data:/var/lib/docker
+      # Sharing the jenkins_plugins volume between Jenkins and the Dind containers to mount in the Jenkins' agents
+      # Since agents are spawn inside dind, all their mount paths must be relative to the dind container’s filesystem.
+      # And is required just for the "jenkins-sanity-check-pipeline" pipeline to verify that all the required plugins
+      # are installed.
+      - jenkins_plugins:/var/jenkins_plugins
     healthcheck:
       test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
       interval: 5s
@@ -66,6 +72,7 @@ services:
 volumes:
   dind_data:
   jenkins_home:
+  jenkins_plugins:
 
 networks:
   jenkins_network:
