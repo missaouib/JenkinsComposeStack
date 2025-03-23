@@ -52,6 +52,7 @@ services:
     volumes:
       - dind_data:/var/lib/docker
       - jenkins_plugins:/var/jenkins_plugins
+      - ./Dockerfile.agent:/var/lib/docker/build-contexts/Dockerfile.agent:ro
     healthcheck:
       test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
       interval: 5s
