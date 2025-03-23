@@ -3,28 +3,12 @@ FROM jenkins/jenkins:2.502-jdk21
 # Disable the setup wizard
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 
-# Define Docker CLI version
-ARG DOCKER_CLI_VERSION="5:28.0.1-1~debian.12~bookworm"
-
 # Switch to root to install packages
 USER root
 
 # Set timezone
 RUN ln -fs /usr/share/zoneinfo/Australia/Sydney /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
-
-# Install Docker CLI
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    lsb-release \
-    && curl -fsSLo /usr/share/keyrings/docker-archive-keyring.asc \
-       https://download.docker.com/linux/debian/gpg \
-    && chmod 644 /usr/share/keyrings/docker-archive-keyring.asc \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.asc] \
-       https://download.docker.com/linux/debian bookworm stable" \
-       > /etc/apt/sources.list.d/docker.list \
-    && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli=$DOCKER_CLI_VERSION \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Pre-install necessary plugins
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
@@ -38,3 +22,9 @@ ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yml
 RUN chown -R jenkins:jenkins /var/jenkins_home /usr/share/jenkins/ref
 
 USER jenkins
+
+# NOTE:
+# Jenkins should act purely as an orchestrator. Agents should handle builds, container interactions, and anything requiring Docker CLI.
+# If a job needs to interact with Docker, it should be assigned to a Docker-enabled agent.
+# Keeping Jenkins lean improves security and reduces the attack surface.
+# Instead, run diagnostics and Docker commands inside the dind container when needed.

@@ -1,4 +1,8 @@
 services:
+  # The Jenkins container does not have Docker CLI installed and there is no such need as the agents are spawned in
+  # the dind container and handle all Docker-related tasks.
+  # Diagnostics (or running the docker commands) can be performed directly inside dind, keeping the Jenkins container
+  # lightweight and following best practices.
   jenkins:
     build:
       context: .
@@ -10,7 +14,6 @@ services:
       - "${JENKINS_PORT}:8080"
       - "${JENKINS_AGENT_PORT}:50000"
     environment:
-      - DOCKER_HOST=tcp://dind:2375
       - ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD}
       - CASC_JENKINS_CONFIG=${JENKINS_CASC_CONFIG}
       - CI_USER_PASSWORD=${JENKINS_CI_USER_PASSWORD}
