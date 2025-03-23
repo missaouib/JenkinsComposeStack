@@ -59,8 +59,12 @@ jenkins:
             name: "docker-agent-on-hostnet-template"
             labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
             dockerTemplateBase:
-              <<: *common-docker-template-base
+              <<: *common-docker-template-base  # Reuse the base template override the fields with different values
               network: host  # To allow access to the host network
+              mounts:
+                # Since agents are running inside dind, all their mount paths must be relative
+                # to the dind container’s filesystem.
+                - "type=bind,src=/var/jenkins_plugins/plugins.txt,dst=/home/jenkins/agent/plugins/plugins.txt"
 
 unclassified:
   timestamper:
@@ -142,70 +146,71 @@ jobs:
                     }
                   }
 
-                  //stage('Check Jenkins Plugins') {
-                  //  steps {
-                  //    catchError(buildResult: 'UNSTABLE') {
-                  //      script {
-                  //        // Read plugins.txt and clean up the plugin list
-                  //        def requiredPlugins = readFile('/home/jenkins/plugins.txt')
-                  //            .split("\\r?\\n")
-                  //            .collect { it.split("#")[0].trim() } // Remove comments
-                  //            .findAll { it } // Remove empty lines
-                  //
-                  //        // Parse required plugins and their versions
-                  //        def pluginVersionMap = [:]
-                  //        requiredPlugins.each { plugin ->
-                  //          def parts = plugin.split(":")
-                  //          def pluginName = parts[0].trim()
-                  //          def pluginVersion = parts.size() == 2 ? parts[1].trim() : null
-                  //          pluginVersionMap[pluginName] = pluginVersion
-                  //        }
-                  //
-                  //        // Fetch installed plugins from Jenkins API
-                  //        def pluginList = sh(
-                  //          script: '''
-                  //            curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
-                  //          ''',
-                  //          returnStdout: true
-                  //        ).trim()
-                  //
-                  //        // Parse JSON response
-                  //        def json = new groovy.json.JsonSlurper().parseText(pluginList)
-                  //
-                  //        // Convert plugin list into a map of shortName -> version
-                  //        def installedPlugins = json.plugins.collectEntries { [(it.shortName): it.version] }
-                  //
-                  //        // Check for missing or outdated plugins
-                  //        def missingPlugins = []
-                  //        def outdatedPlugins = []
-                  //        pluginVersionMap.each { pluginName, requiredVersion ->
-                  //          def installedVersion = installedPlugins[pluginName]
-                  //          if (!installedVersion) {
-                  //            missingPlugins.add(pluginName + (requiredVersion ? ":" + requiredVersion : ""))
-                  //          } else {
-                  //            if (requiredVersion && installedVersion != requiredVersion) {
-                  //              outdatedPlugins.add(pluginName + ": " + installedVersion + " (required: " + requiredVersion + ")")
-                  //            }
-                  //          }
-                  //        }
-                  //
-                  //        if (missingPlugins.isEmpty() && outdatedPlugins.isEmpty()) {
-                  //          echo "✅ All required plugins are installed with the correct versions."
-                  //        } else {
-                  //          if (!missingPlugins.isEmpty()) {
-                  //            def missingList = missingPlugins.join(', ')
-                  //            echo "❌ Missing plugins: " + missingList
-                  //          }
-                  //          if (!outdatedPlugins.isEmpty()) {
-                  //            def outdatedList = outdatedPlugins.join(', ')
-                  //            echo "❌ Outdated plugins: " + outdatedList
-                  //          }
-                  //          error("Plugin verification failed.")
-                  //        }
-                  //      }
-                  //    }
-                  //  }
-                  //}
+                  stage('Check Jenkins Plugins') {
+                    agent { label 'docker-agent-on-hostnet' }
+                    steps {
+                      catchError(buildResult: 'UNSTABLE') {
+                        script {
+                          // Read plugins.txt and clean up the plugin list
+                          def requiredPlugins = readFile('/home/jenkins/agent/plugins/plugins.txt')
+                              .split("\\r?\\n")
+                              .collect { it.split("#")[0].trim() } // Remove comments
+                              .findAll { it } // Remove empty lines
+                  
+                          // Parse required plugins and their versions
+                          def pluginVersionMap = [:]
+                          requiredPlugins.each { plugin ->
+                            def parts = plugin.split(":")
+                            def pluginName = parts[0].trim()
+                            def pluginVersion = parts.size() == 2 ? parts[1].trim() : null
+                            pluginVersionMap[pluginName] = pluginVersion
+                          }
+                  
+                          // Fetch installed plugins from Jenkins API
+                          def pluginList = sh(
+                            script: '''
+                              curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
+                            ''',
+                            returnStdout: true
+                          ).trim()
+                  
+                          // Parse JSON response
+                          def json = new groovy.json.JsonSlurper().parseText(pluginList)
+                  
+                          // Convert plugin list into a map of shortName -> version
+                          def installedPlugins = json.plugins.collectEntries { [(it.shortName): it.version] }
+                  
+                          // Check for missing or outdated plugins
+                          def missingPlugins = []
+                          def outdatedPlugins = []
+                          pluginVersionMap.each { pluginName, requiredVersion ->
+                            def installedVersion = installedPlugins[pluginName]
+                            if (!installedVersion) {
+                              missingPlugins.add(pluginName + (requiredVersion ? ":" + requiredVersion : ""))
+                            } else {
+                              if (requiredVersion && installedVersion != requiredVersion) {
+                                outdatedPlugins.add(pluginName + ": " + installedVersion + " (required: " + requiredVersion + ")")
+                              }
+                            }
+                          }
+                  
+                          if (missingPlugins.isEmpty() && outdatedPlugins.isEmpty()) {
+                            echo "✅ All required plugins are installed with the correct versions."
+                          } else {
+                            if (!missingPlugins.isEmpty()) {
+                              def missingList = missingPlugins.join(', ')
+                              echo "❌ Missing plugins: " + missingList
+                            }
+                            if (!outdatedPlugins.isEmpty()) {
+                              def outdatedList = outdatedPlugins.join(', ')
+                              echo "❌ Outdated plugins: " + outdatedList
+                            }
+                            error("Plugin verification failed.")
+                          }
+                        }
+                      }
+                    }
+                  }
 
                   stage('Run Parallel Jobs') {
                     parallel {
