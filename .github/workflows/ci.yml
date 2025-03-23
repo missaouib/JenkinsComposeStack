@@ -41,7 +41,7 @@ jobs:
         run: docker exec "${{ env.DIND_CONTAINER_NAME }}" docker build \
                       -t "${{ env.JENKINS_AGENT_IMAGE }}" \
                       -f "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}" \
-                      "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}" .
+                      "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}"
 
       - name: Test Jenkins server is up and running
         id: test_jenkins
