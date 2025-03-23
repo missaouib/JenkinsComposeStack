@@ -36,6 +36,11 @@ jobs:
         run: docker compose up -d
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
+      - name: Disable BuildKit
+        # BuildKit is disabled because it may cause issues when running inside a Docker-in-Docker (dind) container.
+        # The legacy 'docker build' command is more stable in this setup.
+        run: echo "DOCKER_BUILDKIT=0" >> $GITHUB_ENV
+
       # TODO: Find a way to automate this image building instead of having to build it explicitly as a separate step
       - name: Build the "${{ env.JENKINS_AGENT_IMAGE }}" image inside the "${{ env.DIND_CONTAINER_NAME }}" container
         run: docker exec "${{ env.DIND_CONTAINER_NAME }}" docker build \
