@@ -65,6 +65,14 @@ jenkins:
                 # Since agents are running inside dind, all their mount paths must be relative
                 # to the dind container’s filesystem.
                 - "type=bind,src=/var/jenkins_plugins/plugins.txt,dst=/home/jenkins/agent/plugins/plugins.txt"
+          - <<: *base-template  # Reuse the base template override the fields with different values
+            name: "docker-agent-on-hostnet-template"
+            labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
+            dockerTemplateBase:
+              <<: *common-docker-template-base  # Reuse the base template override the fields with different values
+              # TODO: build the image in dind manually for now but automate the image building
+              image: "jenkins-jenkins_agent" # docker build -t jenkins-jenkins_agent:latest -f /tmp/Dockerfile.agent .
+              network: host  # To allow access to the host network
 
 unclassified:
   timestamper:
@@ -105,7 +113,7 @@ jobs:
                         catchError(buildResult: 'UNSTABLE') {
                           if (nodeName == "master") {
                             error("❌ Job executed on master! Expected an agent.")
-                          } else if (!(nodeName ==~ /^agent(-on-hostnet)?-template-.*/)) {
+                          } else if (!(nodeName ==~ /^(docker-)?agent(-on-hostnet)?-template-.*/)) {
                             error("❌ Job ran on an unexpected node: " + nodeName)
                           } else {
                             echo "✅ Job executed correctly on agent: " + nodeName
@@ -231,19 +239,24 @@ jobs:
                     }
                   }
 
-                  //stage('Check Docker Connectivity') {
-                  //  steps {
-                  //    catchError(buildResult: 'UNSTABLE') {
-                  //      sh '''
-                  //        if ! docker ps > /dev/null 2>&1; then
-                  //          echo "❌ Docker is not accessible!"
-                  //          exit 1
-                  //        fi
-                  //        echo "✅ Docker is running!"
-                  //      '''
-                  //    }
-                  //  }
-                  //}
+                  stage('Check Docker Connectivity') {
+                    agent { label 'docker-agent-on-hostnet' }
+                    steps {
+                      catchError(buildResult: 'UNSTABLE') {
+                        sh '''
+                          if ! docker ps > /dev/null 2>&1; then
+                            echo "❌ Docker is not accessible!"
+                            exit 1
+                          fi
+                          if ! curl -s -o /dev/null --connect-timeout 5 --fail http://jenkins:8080/login; then
+                            echo "❌ Docker Agent cannot reach Jenkins controller!"
+                            exit 1
+                          fi
+                          echo "✅ Docker is running and can reach Jenkins controller!"
+                        '''
+                      }
+                    }
+                  }
                 }
               }
             """.stripIndent())
