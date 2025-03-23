@@ -48,7 +48,7 @@ jenkins:
             instanceCapStr: "2"  # Limit max agents that can be launched from this specific agent template.
             retentionStrategy:
               idleMinutes: 1  # Number of minutes of idleness after which to kill the agent
-            dockerTemplateBase: &common-docker-template-base
+            dockerTemplateBase: &common-docker-template-base  # Define a reusable template
               memorySwap: 0  # Disables swap, preventing memory overuse.
               memoryLimit: 512m  # Restricts agent container memory usage to 512MB.
               image: "jenkins/inbound-agent:jdk21"
@@ -101,7 +101,7 @@ jobs:
                         catchError(buildResult: 'UNSTABLE') {
                           if (nodeName == "master") {
                             error("❌ Job executed on master! Expected an agent.")
-                          } else if (!(nodeName ==~ /^docker-agent-template-.*/)) {
+                          } else if (!(nodeName ==~ /^docker-agent(-on-hostnet)?-template-.*/)) {
                             error("❌ Job ran on an unexpected node: " + nodeName)
                           } else {
                             echo "✅ Job executed correctly on agent: " + nodeName
