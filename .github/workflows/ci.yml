@@ -36,6 +36,23 @@ jobs:
         run: docker compose up -d
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
+      - name: Debug Docker-in-Docker (dind) Setup
+        run: |
+          echo "### Checking Docker version in dind container..."
+          docker exec "${{ env.DIND_CONTAINER_NAME }}" docker --version || echo "Docker not found!"
+
+          echo "### Checking if BuildKit is enabled..."
+          docker exec "${{ env.DIND_CONTAINER_NAME }}" docker info | grep -i "BuildKit" || echo "BuildKit info not found!"
+
+          echo "### Checking Docker binary path in dind..."
+          docker exec "${{ env.DIND_CONTAINER_NAME }}" sh -c "command -v docker || echo 'Docker binary not found!'"
+
+          echo "### Checking contents of Docker build context directory..."
+          docker exec "${{ env.DIND_CONTAINER_NAME }}" ls -l "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}" || echo "Build context directory not found!"
+
+          echo "### Checking if Dockerfile exists..."
+          docker exec "${{ env.DIND_CONTAINER_NAME }}" ls -l "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}" || echo "Dockerfile not found!"
+
       - name: Disable BuildKit
         # BuildKit is disabled because it may cause issues when running inside a Docker-in-Docker (dind) container.
         # The legacy 'docker build' command is more stable in this setup.
@@ -43,10 +60,10 @@ jobs:
 
       # TODO: Find a way to automate this image building instead of having to build it explicitly as a separate step
       - name: Build the "${{ env.JENKINS_AGENT_IMAGE }}" image inside the "${{ env.DIND_CONTAINER_NAME }}" container
-        run: docker exec "${{ env.DIND_CONTAINER_NAME }}" docker build \
-                      -t "${{ env.JENKINS_AGENT_IMAGE }}" \
-                      -f "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}" \
-                      "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}"
+        run: docker exec "${{ env.DIND_CONTAINER_NAME }}" sh -c "DOCKER_BUILDKIT=0 docker build \
+                      -t '${{ env.JENKINS_AGENT_IMAGE }}' \
+                      -f '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}' \
+                      '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}'"
 
       - name: Test Jenkins server is up and running
         id: test_jenkins
