@@ -1,4 +1,4 @@
-FROM jenkins/ssh-agent:jdk21
+FROM jenkins/inbound-agent:jdk21
 
 # Define Docker CLI version
 ARG DOCKER_CLI_VERSION="5:28.0.1-1~debian.12~bookworm"
