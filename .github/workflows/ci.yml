@@ -6,15 +6,11 @@ on:
       - master
 
 env:
-  DIND_CONTAINER_NAME: dind
   CI_USER_PASSWORD: cI_User@123
   JENKINS_WORKDIR: ./docker/jenkins
   DOCKER_COMPOSE_FILE: docker-compose.yml
-  DOCKERFILE_AGENT_FILE: Dockerfile.agent
   DOCKER_VERSION: 5:28.0.1-1~ubuntu.24.04~noble
-  JENKINS_AGENT_IMAGE: jenkins-jenkins_agent:latest
   CI_USER_PASSWORD_FILE: secrets/ci_user_password.txt
-  DOCKER_BUILD_CONTEXTS_DIR: /var/lib/docker/build-contexts
 
 jobs:
   build:
@@ -35,14 +31,6 @@ jobs:
         id: docker_start
         run: docker compose up -d
         working-directory: ${{ env.JENKINS_WORKDIR }}
-
-      # TODO: Find a way to automate this image building instead of having to build it explicitly as a separate step
-      - name: Build the "${{ env.JENKINS_AGENT_IMAGE }}" image inside the "${{ env.DIND_CONTAINER_NAME }}" container
-        run: |
-          docker exec "${{ env.DIND_CONTAINER_NAME }}" docker build \
-            -t "${{ env.JENKINS_AGENT_IMAGE }}" \
-            -f "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}" \
-            "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}"
 
       - name: Test Jenkins server is up and running
         id: test_jenkins

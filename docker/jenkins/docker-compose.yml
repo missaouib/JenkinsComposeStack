@@ -56,7 +56,6 @@ services:
     volumes:
       - dind_data:/var/lib/docker
       - jenkins_plugins:/var/jenkins_plugins
-      - ./Dockerfile.agent:/var/lib/docker/build-contexts/Dockerfile.agent:ro
     command: >
       sh -c "
       mkdir -p /etc/docker &&
