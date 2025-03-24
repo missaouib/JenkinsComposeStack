@@ -107,6 +107,7 @@ services:
       - REGISTRY_URL=${REGISTRY_URL}
       - REGISTRY_USER=${REGISTRY_USER}
       - REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
+      - JENKINS_AGENT_IMAGE_PATH=${JENKINS_AGENT_IMAGE_PATH}
     volumes:
       - ./Dockerfile.agent:/build-context/Dockerfile.agent:ro
       - ./scripts/builder_entrypoint.sh:/scripts/builder_entrypoint.sh
