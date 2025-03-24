@@ -54,6 +54,11 @@ services:
       - dind_data:/var/lib/docker
       - jenkins_plugins:/var/jenkins_plugins
       - ./Dockerfile.agent:/var/lib/docker/build-contexts/Dockerfile.agent:ro
+    command: >
+      sh -c "
+      mkdir -p /etc/docker &&
+      echo '{ \"insecure-registries\":[\"registry:5000\"] }' > /etc/docker/daemon.json &&
+      dockerd-entrypoint.sh"
     healthcheck:
       test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
       interval: 5s
