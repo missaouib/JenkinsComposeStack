@@ -59,8 +59,8 @@ services:
     command: >
       sh -c "
       mkdir -p /etc/docker &&
-      echo '{ \"insecure-registries\":[\"registry:5000\"] }' > /etc/docker/daemon.json &&
-      dockerd-entrypoint.sh --host tcp://0.0.0.0:2375 --storage-driver=overlay2"
+      echo '{ \"insecure-registries\":[\"${REGISTRY_URL}\"] }' > /etc/docker/daemon.json &&
+      dockerd-entrypoint.sh --host ${DOCKER_LISTEN_ADDRESS} --storage-driver=overlay2"
     healthcheck:
       test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
       interval: 5s
