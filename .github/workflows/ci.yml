@@ -35,11 +35,6 @@ jobs:
         id: docker_start
         run: docker compose up -d
         working-directory: ${{ env.JENKINS_WORKDIR }}
-#
-#      - name: Disable BuildKit
-#        # BuildKit is disabled because it may cause issues when running inside a Docker-in-Docker (dind) container.
-#        # The legacy 'docker build' command is more stable in this setup.
-#        run: echo "DOCKER_BUILDKIT=0" >> $GITHUB_ENV
 
       # TODO: Find a way to automate this image building instead of having to build it explicitly as a separate step
       - name: Build the "${{ env.JENKINS_AGENT_IMAGE }}" image inside the "${{ env.DIND_CONTAINER_NAME }}" container
@@ -48,43 +43,6 @@ jobs:
             -t "${{ env.JENKINS_AGENT_IMAGE }}" \
             -f "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}" \
             "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}"
-
-      - name: Try Single-Line `docker build`
-        if: always()
-        run: |
-          docker exec "${{ env.DIND_CONTAINER_NAME }}" sh -c "DOCKER_BUILDKIT=0 docker build -t '${{ env.JENKINS_AGENT_IMAGE }}' -f '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}' '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}'" || true
-
-      - name: Try Multi-Line `docker build` with Backslashes - WORKED
-        if: always()
-        run: |
-          docker exec "${{ env.DIND_CONTAINER_NAME }}" sh -c "DOCKER_BUILDKIT=0 docker build \
-            -t '${{ env.JENKINS_AGENT_IMAGE }}' \
-            -f '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}' \
-            '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}'" || true
-
-      - name: Try `docker build` without BuildKit Override - WORKED
-        if: always()
-        run: |
-          docker exec "${{ env.DIND_CONTAINER_NAME }}" sh -c "docker build \
-            -t '${{ env.JENKINS_AGENT_IMAGE }}' \
-            -f '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}' \
-            '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}'" || true
-
-      - name: Try `docker buildx build`
-        if: always()
-        run: |
-          docker exec "${{ env.DIND_CONTAINER_NAME }}" sh -c "docker buildx build \
-            -t '${{ env.JENKINS_AGENT_IMAGE }}' \
-            -f '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}' \
-            '${{ env.DOCKER_BUILD_CONTEXTS_DIR }}'" || true
-
-      - name: Try Running `docker build` Without `sh -c`
-        if: always()
-        run: |
-          docker exec "${{ env.DIND_CONTAINER_NAME }}" docker build \
-            -t "${{ env.JENKINS_AGENT_IMAGE }}" \
-            -f "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}/${{ env.DOCKERFILE_AGENT_FILE }}" \
-            "${{ env.DOCKER_BUILD_CONTEXTS_DIR }}" || true
 
       - name: Test Jenkins server is up and running
         id: test_jenkins
