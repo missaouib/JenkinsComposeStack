@@ -91,6 +91,24 @@ services:
       retries: 5
       start_period: 10s
 
+  builder:
+    image: docker:28.0.2-cli
+    container_name: builder
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Setting up the builder service..."
+        ls -la /build-context/Dockerfile.agent
+    volumes:
+      - ./Dockerfile.agent:/build-context/Dockerfile.agent:ro
+    networks:
+      - jenkins_network
+    depends_on:
+      dind:
+        condition: service_healthy
+      registry:
+        condition: service_healthy
+
 volumes:
   dind_data:
   jenkins_home:
