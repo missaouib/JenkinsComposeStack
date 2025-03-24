@@ -36,7 +36,7 @@ jenkins:
         errorDuration: 313
         dockerApi:
           dockerHost:
-            uri: "tcp://dind:2375"  # Agents need Docker access - points agents to dind container
+            uri: "${DOCKER_DAEMON_URL}"  # Agents need Docker access - points agents to dind container
           readTimeout: 120
           connectTimeout: 60
         templates:
@@ -79,9 +79,9 @@ jenkins:
                 # In Docker-in-Docker (DinD) setups, the actual Docker daemon runs inside the dind container.
                 # Other containers (such as Jenkins agents) cannot access the Docker daemon by default because
                 # they are separate processes.
-                # By setting DOCKER_HOST=tcp://dind:2375, the container is instructed to send all Docker commands
-                # to the dind service running at tcp://dind:2375
-                - "DOCKER_HOST=tcp://dind:2375" # points agents to dind container
+                # By setting DOCKER_HOST=${DOCKER_DAEMON_URL}, the container is instructed to send all Docker commands
+                # to the dind service running at ${DOCKER_DAEMON_URL}
+                - "DOCKER_HOST=${DOCKER_DAEMON_URL}" # points agents to dind container
 
 unclassified:
   timestamper:
