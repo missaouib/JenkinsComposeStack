@@ -1,5 +1,7 @@
 # For docs / examples:
 # https://github.com/jenkinsci/configuration-as-code-plugin/tree/master/demos
+# For reference:
+# http://localhost:8080/manage/configuration-as-code/reference
 jenkins:
   systemMessage: "Welcome to Jenkins powered by Configuration as Code!"
 
@@ -31,6 +33,7 @@ jenkins:
 
   clouds:
     - docker:
+        # For reference: http://localhost:8080/manage/configuration-as-code/reference#Cloud-docker
         name: "Docker"
         containerCap: 5  # Global Limit for the Cloud -maximum number of running containers for this entire Docker cloud.
         errorDuration: 313
@@ -68,11 +71,9 @@ jenkins:
           - <<: *base-template  # Reuse the base template override the fields with different values
             name: "docker-agent-on-hostnet-template"
             labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
-            pullStrategy: PULL_NEVER  # Set to 'Never pull' to enable running self-made local Docker images.
             dockerTemplateBase:
               <<: *common-docker-template-base  # Reuse the base template override the fields with different values
-              # TODO: build the image in dind manually for now but automate the image building
-              image: "jenkins-jenkins_agent"
+              image: "${JENKINS_AGENT_IMAGE_PATH}"
               network: host  # To allow access to the host network
               environment:
                 # This tells Docker CLI commands running inside the agent container where to find the Docker daemon.
