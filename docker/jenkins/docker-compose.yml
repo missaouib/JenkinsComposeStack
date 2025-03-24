@@ -101,19 +101,7 @@ services:
   builder:
     image: docker:28.0.2-cli
     container_name: builder
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        echo "Logging into local registry..."
-        docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
-
-        echo "Building agent image..."
-        docker build -t ${REGISTRY_URL}/jenkins_agent:latest -f /build-context/Dockerfile.agent /build-context
-
-        echo "Pushing agent image to local registry..."
-        docker push ${REGISTRY_URL}/jenkins_agent:latest
-        docker images
-        echo "Done."
+    entrypoint: ["/bin/sh", "/scripts/builder_entrypoint.sh"]
     environment:
       - DOCKER_HOST=${DOCKER_DAEMON_URL} # points builder to dind container
       - REGISTRY_URL=${REGISTRY_URL}
@@ -121,6 +109,7 @@ services:
       - REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
     volumes:
       - ./Dockerfile.agent:/build-context/Dockerfile.agent:ro
+      - ./scripts/builder_entrypoint.sh:/scripts/builder_entrypoint.sh
     networks:
       - jenkins_network
     depends_on:
