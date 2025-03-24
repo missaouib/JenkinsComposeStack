@@ -73,7 +73,7 @@ jenkins:
             labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
             dockerTemplateBase:
               <<: *common-docker-template-base  # Reuse the base template override the fields with different values
-              image: "${JENKINS_AGENT_IMAGE_PATH}"
+              image: "${JENKINS_DOCKER_AGENT_IMAGE_PATH}"
               network: host  # To allow access to the host network
               environment:
                 # This tells Docker CLI commands running inside the agent container where to find the Docker daemon.
