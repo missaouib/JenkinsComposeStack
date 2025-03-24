@@ -22,3 +22,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set timezone
 RUN ln -fs /usr/share/zoneinfo/Australia/Sydney /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
+
+USER jenkins
