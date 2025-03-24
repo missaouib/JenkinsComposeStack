@@ -74,6 +74,14 @@ jenkins:
               # TODO: build the image in dind manually for now but automate the image building
               image: "jenkins-jenkins_agent"
               network: host  # To allow access to the host network
+              environment:
+                # This tells Docker CLI commands running inside the agent container where to find the Docker daemon.
+                # In Docker-in-Docker (DinD) setups, the actual Docker daemon runs inside the dind container.
+                # Other containers (such as Jenkins agents) cannot access the Docker daemon by default because
+                # they are separate processes.
+                # By setting DOCKER_HOST=tcp://dind:2375, the container is instructed to send all Docker commands
+                # to the dind service running at tcp://dind:2375
+                - "DOCKER_HOST=tcp://dind:2375" # points agents to dind container
 
 unclassified:
   timestamper:
