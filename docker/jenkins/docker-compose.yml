@@ -99,6 +99,10 @@ services:
       - |
         echo "Setting up the builder service..."
         ls -la /build-context/Dockerfile.agent
+        echo "Checking Docker access..."
+        docker info
+    environment:
+      - DOCKER_HOST=${DOCKER_DAEMON_URL} # points builder to dind container
     volumes:
       - ./Dockerfile.agent:/build-context/Dockerfile.agent:ro
     networks:
