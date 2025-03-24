@@ -68,6 +68,7 @@ jenkins:
           - <<: *base-template  # Reuse the base template override the fields with different values
             name: "docker-agent-on-hostnet-template"
             labelString: "docker-agent-on-hostnet alpine jdk21 alpine-jdk21 git-2.43"
+            pullStrategy: PULL_NEVER  # Set to 'Never pull' to enable running self-made local Docker images.
             dockerTemplateBase:
               <<: *common-docker-template-base  # Reuse the base template override the fields with different values
               # TODO: build the image in dind manually for now but automate the image building
