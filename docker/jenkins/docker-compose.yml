@@ -80,7 +80,7 @@ services:
           memory: "${DIND_MEMORY_RESERVATION}"   # Ensure at least 2GB RAM is reserved
 
   registry:
-    image: registry:2.8.3
+    image: distribution/distribution:3.0.0-rc.4
     container_name: registry
     restart: always
     ports:
