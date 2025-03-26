@@ -50,14 +50,17 @@ services:
   dind:
     # The Docker daemon running in docker:dind, and Jenkins' agents will send docker commands here...
     image: docker:dind
-    container_name: dind
+    # The "docker:dind" image will generate the TLS certs if the ${DOCKER_TLS_CERTDIR} is not empty.
+    # And the generated certs are valid only for the {CONTAINER_ID}, docker and localhost, but not any other name.
+    # So either the container name or one of its aliases has to be "docker" to avoid the "certificate is valid for..." error.
+    container_name: docker
     privileged: true
     environment:
-      # TODO: Fix insecure access warnings in logs
       - DOCKER_TLS_CERTDIR=${DOCKER_TLS_CERTDIR}
     volumes:
       - dind_data:/var/lib/docker
       - jenkins_plugins:/var/jenkins_plugins
+      - jenkins_docker_certs:/certs/client # This shared volume will be mounted in all the clients accessing dind or docker
     command: >
       sh -c "
       mkdir -p /etc/docker &&
@@ -105,12 +108,15 @@ services:
     container_name: builder
     entrypoint: ["/bin/sh", "/scripts/builder_entrypoint.sh"]
     environment:
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_CERT_PATH=/certs/client
       - DOCKER_HOST=${DOCKER_DAEMON_URL} # points builder to dind container
       - REGISTRY_URL=${REGISTRY_URL}
       - REGISTRY_USER=${REGISTRY_USER}
       - REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
       - JENKINS_DOCKER_AGENT_IMAGE_PATH=${JENKINS_DOCKER_AGENT_IMAGE_PATH}
     volumes:
+      - jenkins_docker_certs:/certs/client:ro
       - ./Dockerfile.agent:/build-context/Dockerfile.agent:ro
       - ./scripts/builder_entrypoint.sh:/scripts/builder_entrypoint.sh
     networks:
@@ -130,6 +136,11 @@ volumes:
   # are installed.
   jenkins_plugins:
   registry_data:
+  # Starting in 18.09+, the dind variants of this image will automatically generate TLS certificates in the directory
+  # specified by the DOCKER_TLS_CERTDIR environment variable.
+  # In order to make use of the TLS functionality from a "client" container, at least the client subdirectory of the
+  # $DOCKER_TLS_CERTDIR directory needs to be shared and that's what this shared volume is used for.
+  jenkins_docker_certs:
 
 networks:
   jenkins_network:
