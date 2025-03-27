@@ -60,7 +60,7 @@ services:
     volumes:
       - dind_data:/var/lib/docker
       - jenkins_plugins:/var/jenkins_plugins
-      - jenkins_docker_certs:/certs/client # This shared volume will be mounted in all the clients accessing dind or docker
+      - jenkins_docker_certs:${DOCKER_CLIENT_TLS_CERTDIR} # This shared volume will be mounted in all the clients accessing dind or docker
     command: >
       sh -c "
       mkdir -p /etc/docker &&
@@ -109,14 +109,14 @@ services:
     entrypoint: ["/bin/sh", "/scripts/builder_entrypoint.sh"]
     environment:
       - DOCKER_TLS_VERIFY=1
-      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_CERT_PATH=${DOCKER_CLIENT_TLS_CERTDIR}
       - DOCKER_HOST=${DOCKER_DAEMON_URL} # points builder to dind container
       - REGISTRY_URL=${REGISTRY_URL}
       - REGISTRY_USER=${REGISTRY_USER}
       - REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
       - JENKINS_DOCKER_AGENT_IMAGE_PATH=${JENKINS_DOCKER_AGENT_IMAGE_PATH}
     volumes:
-      - jenkins_docker_certs:/certs/client:ro
+      - jenkins_docker_certs:${DOCKER_CLIENT_TLS_CERTDIR}:ro
       - ./Dockerfile.agent:/build-context/Dockerfile.agent:ro
       - ./scripts/builder_entrypoint.sh:/scripts/builder_entrypoint.sh
     networks:
