@@ -76,6 +76,10 @@ jenkins:
               <<: *common-docker-template-base  # Reuse the base template override the fields with different values
               image: "${JENKINS_DOCKER_AGENT_IMAGE_PATH}"
               network: host  # To allow access to the host network
+              mounts:
+                # Since agents are running inside dind, all their mount paths must be relative
+                # to the dind container’s filesystem.
+                - "type=bind,src=/certs/client,dst=/certs/client,readonly"
               environment:
                 # This tells Docker CLI commands running inside the agent container where to find the Docker daemon.
                 # In Docker-in-Docker (DinD) setups, the actual Docker daemon runs inside the dind container.
@@ -84,6 +88,8 @@ jenkins:
                 # By setting DOCKER_HOST=${DOCKER_DAEMON_URL}, the container is instructed to send all Docker commands
                 # to the dind service running at ${DOCKER_DAEMON_URL}
                 - "DOCKER_HOST=${DOCKER_DAEMON_URL}" # points agents to dind container
+                - "DOCKER_TLS_VERIFY=1"
+                - "DOCKER_CERT_PATH=${DOCKER_CERT_PATH}"
 
 credentials:
   system:
