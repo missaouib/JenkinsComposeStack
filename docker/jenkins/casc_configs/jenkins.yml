@@ -39,6 +39,7 @@ jenkins:
         errorDuration: 313
         dockerApi:
           dockerHost:
+            credentialsId: "docker_tls_certificate"
             uri: "${DOCKER_DAEMON_URL}"  # Agents need Docker access - points agents to dind container
           readTimeout: 120
           connectTimeout: 60
@@ -83,6 +84,17 @@ jenkins:
                 # By setting DOCKER_HOST=${DOCKER_DAEMON_URL}, the container is instructed to send all Docker commands
                 # to the dind service running at ${DOCKER_DAEMON_URL}
                 - "DOCKER_HOST=${DOCKER_DAEMON_URL}" # points agents to dind container
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - x509ClientCert:
+              scope: SYSTEM
+              id: "docker_tls_certificate"
+              clientKeySecret: "${readFile:${DOCKER_CERT_PATH}/key.pem}"
+              clientCertificate: "${readFile:${DOCKER_CERT_PATH}/cert.pem}"
+              serverCaCertificate: "${readFile:${DOCKER_CERT_PATH}/ca.pem}"
 
 unclassified:
   timestamper:
