@@ -103,15 +103,7 @@ actual dancing. Unless you count me dancing behind the scenes with excitement.
 
 ---
 
-### Feedback and Discussion
-
-Okay, now that I’ve shown off all the cool stuff, it’s your turn! I need your feedback. Is the setup working in the
-direction we need? Anything that’s confusing or needs tweaking? Feel free to ask questions anytime, but I’ll focus on
-feedback here at the end. Your input helps shape the project’s future. So, let’s make it awesome together!
-
----
-
-### Conclusion
+### Conclusion & Feedback
 
 To wrap up, this setup is like a lean, mean, Jenkins machine:
 
@@ -120,6 +112,7 @@ To wrap up, this setup is like a lean, mean, Jenkins machine:
 - It scales like a pro.
   And most importantly, it ensures Jenkins is always production-ready, so I don’t waste time fixing things that
   should’ve been caught earlier.
-  I’m excited to hear your thoughts, and as always, if you have any questions later, feel free to reach out. I’m happy
-  to chat about containers, Jenkins, or anything else that tickles your fancy. Thanks for attending — and now, let’s
-  hear your feedback!
+  As always, if you have any questions later, feel free to reach out. I’m happy
+  to chat about containers, Jenkins, or anything else that tickles your fancy. Thanks for attending — and now, I’m
+  excited to hear your thoughts, is the setup working in the direction we need? Anything that’s confusing or needs
+  tweaking? Your feedback helps shape the project’s future. Let’s make it awesome together!
