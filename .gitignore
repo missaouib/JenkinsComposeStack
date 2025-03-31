@@ -1,2 +1,3 @@
-/docker/jenkins/secrets/
 /.idea/
+/docker/jenkins/certs/
+/docker/jenkins/secrets/
