@@ -100,7 +100,7 @@ services:
     networks:
       - jenkins_network
     healthcheck:
-      test: [ "CMD", "wget", "--spider", "-q", "http://${REGISTRY_URL}/v2/" ]
+      test: [ "CMD", "wget", "--no-check-certificate", "--spider", "-q", "https://${REGISTRY_URL}/v2/" ]
       interval: 10s
       retries: 5
       start_period: 10s
