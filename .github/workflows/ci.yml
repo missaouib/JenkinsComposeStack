@@ -6,8 +6,11 @@ on:
       - master
 
 env:
+  CERTS_DIR: certs
+  CERTS_EXPIRY: 730
   CI_USER_PASSWORD: cI_User@123
   JENKINS_WORKDIR: ./docker/jenkins
+  REGISTRY_CONTAINER_NAME: registry
   DOCKER_COMPOSE_FILE: docker-compose.yml
   DOCKER_VERSION: 5:28.0.1-1~ubuntu.24.04~noble
   CI_USER_PASSWORD_FILE: secrets/ci_user_password.txt
@@ -29,12 +32,12 @@ jobs:
 
       - name: Generate certificate for the registry service
         run: |
-          mkdir -p certs
+          mkdir -p ${{ env.CERTS_DIR }}
           openssl req \
-            -newkey rsa:4096 -nodes -sha256 -keyout certs/registry.key \
-            -x509 -days 365 -out certs/registry.crt \
-            -subj "/CN=registry" \
-            -addext "subjectAltName=DNS:registry"
+            -newkey rsa:4096 -nodes -sha256 -keyout ${{ env.CERTS_DIR }}/registry.key \
+            -x509 -days ${{ env.CERTS_EXPIRY }} -out ${{ env.CERTS_DIR }}/registry.crt \
+            -subj "/CN=${{ env.REGISTRY_CONTAINER_NAME }}" \
+            -addext "subjectAltName=DNS:${{ env.REGISTRY_CONTAINER_NAME }}"
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
       - name: Start and setup the container
