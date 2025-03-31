@@ -33,7 +33,7 @@ jobs:
           openssl req \
             -newkey rsa:4096 -nodes -sha256 -keyout certs/registry.key \
             -x509 -days 365 -out certs/registry.crt \
-            -subj "//CN=registry" \
+            -subj "/CN=registry" \
             -addext "subjectAltName=DNS:registry"
         working-directory: ${{ env.JENKINS_WORKDIR }}
 
