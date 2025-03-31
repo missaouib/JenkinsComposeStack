@@ -95,7 +95,10 @@ services:
       - OTEL_TRACES_EXPORTER=none
       - REGISTRY_HTTP_SECRET=${REGISTRY_HTTP_SECRET}
       - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry
+      - REGISTRY_HTTP_TLS_KEY=/certs/registry.key
+      - REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.crt
     volumes:
+      - ./certs:/certs:ro
       - registry_data:/var/lib/registry
     networks:
       - jenkins_network
