@@ -27,6 +27,16 @@ jobs:
       - name: Check if docker compose is available before proceeding
         run: docker compose version || { echo "docker compose is not installed or not in PATH"; exit 1; }
 
+      - name: Generate certificate for the registry service
+        run: |
+          mkdir -p certs
+          openssl req \
+            -newkey rsa:4096 -nodes -sha256 -keyout certs/registry.key \
+            -x509 -days 365 -out certs/registry.crt \
+            -subj "//CN=registry" \
+            -addext "subjectAltName=DNS:registry"
+        working-directory: ${{ env.JENKINS_WORKDIR }}
+
       - name: Start and setup the container
         id: docker_start
         run: docker compose up -d
