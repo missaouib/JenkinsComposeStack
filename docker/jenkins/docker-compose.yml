@@ -62,12 +62,9 @@ services:
     volumes:
       - dind_data:/var/lib/docker
       - jenkins_plugins:/var/jenkins_plugins
+      - ./certs/registry.crt:/usr/local/share/ca-certificates/registry.crt:ro
       - jenkins_docker_certs:${DOCKER_CLIENT_TLS_CERTDIR} # This shared volume will be mounted in all the clients accessing dind or docker
-    command: >
-      sh -c "
-      mkdir -p /etc/docker &&
-      echo '{ \"insecure-registries\":[\"${REGISTRY_URL}\"] }' > /etc/docker/daemon.json &&
-      dockerd-entrypoint.sh --host ${DOCKER_LISTEN_ADDRESS} --storage-driver=overlay2"
+    command: sh -c "update-ca-certificates && dockerd-entrypoint.sh"
     healthcheck:
       test: ["CMD", "sh", "-c", "docker version --format '{{.Server.Version}}' || exit 1"]
       interval: 5s
