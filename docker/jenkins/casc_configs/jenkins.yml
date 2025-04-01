@@ -98,6 +98,8 @@ credentials:
           - x509ClientCert:
               scope: SYSTEM
               id: "docker_tls_certificate"
+              # TODO: Note: these will be visible in http://localhost:8080/manage/configuration-as-code/viewExport
+              # Is that fine? Think about it.
               clientKeySecret: "${readFile:${DOCKER_CERT_PATH}/key.pem}"
               clientCertificate: "${readFile:${DOCKER_CERT_PATH}/cert.pem}"
               serverCaCertificate: "${readFile:${DOCKER_CERT_PATH}/ca.pem}"
@@ -205,7 +207,7 @@ jobs:
                           // Fetch installed plugins from Jenkins API
                           def pluginList = sh(
                             script: '''
-                              curl -s -u "admin:Admin@123" "http://jenkins:8080/pluginManager/api/json?depth=1"
+                              curl -s -u "admin:${ADMIN_PASSWORD}" "http://jenkins:8080/pluginManager/api/json?depth=1"
                             ''',
                             returnStdout: true
                           ).trim()
