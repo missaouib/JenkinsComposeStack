@@ -79,7 +79,7 @@ jenkins:
               mounts:
                 # Since agents are running inside dind, all their mount paths must be relative
                 # to the dind container’s filesystem.
-                - "type=bind,src=/certs/client,dst=/certs/client,readonly"
+                - "type=bind,src=${DOCKER_CERT_PATH},dst=${DOCKER_CERT_PATH},readonly"
               environment:
                 # This tells Docker CLI commands running inside the agent container where to find the Docker daemon.
                 # In Docker-in-Docker (DinD) setups, the actual Docker daemon runs inside the dind container.
