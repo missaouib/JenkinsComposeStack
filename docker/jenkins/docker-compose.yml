@@ -56,6 +56,7 @@ services:
     # And the generated certs are valid only for the {CONTAINER_ID}, docker and localhost, but not any other name.
     # So either the container name or one of its aliases has to be "docker" to avoid the "certificate is valid for..." error.
     container_name: docker
+    restart: unless-stopped
     privileged: true
     environment:
       - DOCKER_TLS_CERTDIR=${DOCKER_TLS_CERTDIR}
@@ -84,7 +85,7 @@ services:
   registry:
     image: distribution/distribution:3.0.0-rc.4
     container_name: registry
-    restart: always
+    restart: unless-stopped
     ports:
       - "${REGISTRY_PORT}:5000"
     environment:
