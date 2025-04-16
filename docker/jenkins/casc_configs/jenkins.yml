@@ -274,15 +274,22 @@ jobs:
                     steps {
                       catchError(buildResult: 'UNSTABLE') {
                         sh '''
+                          # Check if Docker is running
                           if ! docker ps > /dev/null 2>&1; then
                             echo "❌ Docker is not accessible!"
                             exit 1
                           fi
+                          # Check if Docker Compose is available
+                          if ! docker compose version > /dev/null 2>&1; then
+                            echo "❌ Docker Compose is not available!"
+                            exit 1
+                          fi
+                          # Check if Jenkins is reachable
                           if ! curl -s -o /dev/null --connect-timeout 5 --fail http://jenkins:8080/login; then
                             echo "❌ Docker Agent cannot reach Jenkins controller!"
                             exit 1
                           fi
-                          echo "✅ Docker is running and can reach Jenkins controller!"
+                          echo "✅ Docker is running, Docker Compose is available, and can reach Jenkins controller!"
                         '''
                       }
                     }
