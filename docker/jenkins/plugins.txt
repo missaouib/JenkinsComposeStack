@@ -3,10 +3,10 @@ blueocean:1.27.17
 
 # Core functionality
 workflow-aggregator:608.v67378e9d3db_1          # Full Pipeline (Jenkinsfile) support
-configuration-as-code:1947.v7d33fe23569c        # Jenkins as Code (JCasC)
+configuration-as-code:1953.v148f87d74b_1e       # Jenkins as Code (JCasC)
 
 # UI & Parameterized Jobs (Dropdowns)
-job-dsl:1.91                                    # Programmatically create jobs
+job-dsl:1.92                                    # Programmatically create jobs
 pipeline-utility-steps:2.19.0                   # Read/write files, manipulate parameters
 uno-choice:2.8.6                                # active-choices - Dynamic dropdowns (populate from files)
 extensible-choice-parameter:237.v51568f37b_78e
@@ -21,4 +21,4 @@ credentials-binding:687.v619cb_15e923f          # Store and use secrets safely
 # Logging & Timestamps
 timestamper:1.28                                # Adds timestamps to job logs
 
-docker-plugin:1.10.0                            #  Allows containers to be dynamically provisioned as Jenkins agents using Docker
+docker-plugin:1274.vc0203fdf2e74                #  Allows containers to be dynamically provisioned as Jenkins agents using Docker
